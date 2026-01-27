@@ -32,6 +32,12 @@
 	"reportIssueUrl": "https://github.com/microsoft/vscode/issues/new",
 	"nodejsRepository": "https://nodejs.org",
 	"urlProtocol": "code-oss",
+	"extensionsGallery": {
+		"serviceUrl": "https://marketplace.visualstudio.com/_apis/public/gallery",
+		"itemUrl": "https://marketplace.visualstudio.com/items",
+		"cacheUrl": "https://vscode.blob.core.windows.net/gallery/index",
+		"controlUrl": ""
+	},
 	"webviewContentExternalBaseUrlTemplate": "https://{{uuid}}.vscode-cdn.net/insider/ef65ac1ba57f57f2a3961bfe94aa20481caca4c6/out/vs/workbench/contrib/webview/browser/pre/",
 	"builtInExtensions": [
 		{
@@ -80,6 +86,22 @@
 					"flags": "verified"
 				},
 				"publisherDisplayName": "Microsoft"
+			}
+		},
+		{
+			"name": "James-Yu.latex-workshop",
+			"version": "10.12.2",
+			"sha256": "e955e5b0cb403c544e62599825d1e3e787e8d49d0b0b85096f3234d1cbaec219",
+			"repo": "https://github.com/James-Yu/LaTeX-Workshop",
+			"metadata": {
+				"id": "61d03280-3919-4dd1-bce1-178ca21fdeaf",
+				"publisherId": {
+					"publisherId": "acd591bd-fa80-4809-bdbd-28c80bed19ec",
+					"publisherName": "James-Yu",
+					"displayName": "James Yu",
+					"flags": "verified"
+				},
+				"publisherDisplayName": "James Yu"
 			}
 		}
 	],
