@@ -358,7 +358,6 @@ import './contrib/welcomeWalkthrough/browser/walkThrough.contribution.js';
 import './contrib/welcomeViews/common/viewsWelcome.contribution.js';
 import './contrib/welcomeViews/common/newFile.contribution.js';
 import './contrib/welcomeLatexProjects/browser/welcomeLatexProjects.contribution.js';
-import './contrib/latexPdfViewer/browser/latexPdfViewer.contribution.js';
 
 // Call Hierarchy
 import './contrib/callHierarchy/browser/callHierarchy.contribution.js';
