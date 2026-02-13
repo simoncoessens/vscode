@@ -769,6 +769,11 @@ export class EditorPart extends Part<IEditorPartMemento> implements IEditorPart,
 			return; // Cannot remove the last root group
 		}
 
+		// Cannot remove a locked group
+		if (groupView.isLocked) {
+			return;
+		}
+
 		// Remove empty group
 		if (groupView.isEmpty) {
 			this.doRemoveEmptyGroup(groupView, preserveFocus);

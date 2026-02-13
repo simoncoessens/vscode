@@ -394,7 +394,7 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 
 		// Close empty editor group via middle mouse click
 		this._register(addDisposableListener(this.element, EventType.AUXCLICK, e => {
-			if (this.isEmpty && e.button === 1 /* Middle Button */) {
+			if (this.isEmpty && e.button === 1 /* Middle Button */ && !this.isLocked) {
 				EventHelper.stop(e, true);
 
 				this.groupsView.removeGroup(this);
@@ -1522,6 +1522,10 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 	//#region closeEditor()
 
 	async closeEditor(editor: EditorInput | undefined = this.activeEditor || undefined, options?: ICloseEditorOptions): Promise<boolean> {
+		if (this.isLocked) {
+			return false;
+		}
+
 		return this.doCloseEditorWithConfirmationHandling(editor, options);
 	}
 
@@ -1644,7 +1648,7 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 			this._onDidActiveEditorChange.fire({ editor: undefined });
 
 			// Remove empty group if we should
-			if (closeEmptyGroup) {
+			if (closeEmptyGroup && !this.isLocked) {
 				this.groupsView.removeGroup(this, preserveFocus);
 			}
 		}
@@ -1861,6 +1865,10 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 	//#region closeEditors()
 
 	async closeEditors(args: EditorInput[] | ICloseEditorsFilter, options?: ICloseEditorOptions): Promise<boolean> {
+		if (this.isLocked) {
+			return true;
+		}
+
 		if (this.isEmpty) {
 			return true;
 		}
@@ -1939,12 +1947,16 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 	closeAllEditors(options: { excludeConfirming: true }): boolean;
 	closeAllEditors(options?: ICloseAllEditorsOptions): Promise<boolean>;
 	closeAllEditors(options?: ICloseAllEditorsOptions): boolean | Promise<boolean> {
+		if (this.isLocked) {
+			return true;
+		}
+
 		if (this.isEmpty) {
 
 			// If the group is empty and the request is to close all editors, we still close
 			// the editor group is the related setting to close empty groups is enabled for
 			// a convenient way of removing empty editor groups for the user.
-			if (this.groupsView.partOptions.closeEmptyGroups) {
+			if (this.groupsView.partOptions.closeEmptyGroups && !this.isLocked) {
 				this.groupsView.removeGroup(this);
 			}
 
@@ -2177,13 +2189,18 @@ export class EditorGroupView extends Themable implements IEditorGroupView {
 			available: new Dimension(width, height - this.editorPane.minimumHeight)
 		});
 
+		// For chromeless groups (e.g. PDF viewer), skip the title height so
+		// the editor pane fills the full available space with no gap.
+		const isChromeless = this.element.classList.contains('chromeless-pdf-viewer');
+		const effectiveTitleHeight = isChromeless ? 0 : titleControlSize.height;
+
 		// Update progress bar location
 		this.progressBar.getContainer().style.top = `${Math.max(this.titleHeight.offset - 2, 0)}px`;
 
 		// Pass the container width and remaining height to the editor layout
-		const editorHeight = Math.max(0, height - titleControlSize.height);
+		const editorHeight = Math.max(0, height - effectiveTitleHeight);
 		this.editorContainer.style.height = `${editorHeight}px`;
-		this.editorPane.layout({ width, height: editorHeight, top: top + titleControlSize.height, left });
+		this.editorPane.layout({ width, height: editorHeight, top: top + effectiveTitleHeight, left });
 	}
 
 	relayout(): void {

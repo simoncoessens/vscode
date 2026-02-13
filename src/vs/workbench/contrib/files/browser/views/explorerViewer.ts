@@ -1412,6 +1412,10 @@ export class FilesFilter implements ITreeFilter<ExplorerItem, FuzzyScore> {
 			const editors = this.editorService.visibleEditors;
 			const editor = editors.find(e => e.resource && this.uriIdentityService.extUri.isEqualOrParent(e.resource, stat.resource));
 			if (editor && stat.root === this.explorerService.findClosestRoot(stat.resource)) {
+				// Don't override exclude for PDF files — they are handled internally by the PDF viewer
+				if (stat.name.endsWith('.pdf')) {
+					return false;
+				}
 				this.editorsAffectingFilter.add(editor);
 				return true; // Show all opened files and their parents
 			}
