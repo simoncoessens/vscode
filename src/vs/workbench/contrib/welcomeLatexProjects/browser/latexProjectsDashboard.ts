@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { $, addDisposableListener, append, clearNode, EventType } from '../../../../base/browser/dom.js';
+import { $, addDisposableListener, append, clearNode, Dimension, EventType } from '../../../../base/browser/dom.js';
 import { Codicon } from '../../../../base/common/codicons.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { DisposableStore } from '../../../../base/common/lifecycle.js';
@@ -23,37 +23,27 @@ import { IFileService } from '../../../../platform/files/common/files.js';
 import { IDialogService } from '../../../../platform/dialogs/common/dialogs.js';
 import { IQuickInputService } from '../../../../platform/quickinput/common/quickInput.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
-import { Dimension } from '../../../../base/browser/dom.js';
 import { VSBuffer } from '../../../../base/common/buffer.js';
 import { INativeEnvironmentService } from '../../../../platform/environment/common/environment.js';
 
 type RecentEntry = (IRecentFolder | IRecentWorkspace) & { id: string };
-
-type SortColumn = 'title' | 'owner' | 'lastModified';
-type SortDirection = 'asc' | 'desc';
-
-type NavView = 'all' | 'yours' | 'trashed';
 
 export class LatexProjectsDashboard extends EditorPane {
 
 	static readonly ID = 'latexProjectsDashboard';
 
 	private container!: HTMLElement;
-	private mainContent!: HTMLElement;
-	private tableBody!: HTMLTableSectionElement;
+	private projectList!: HTMLElement;
 	private searchInput!: HTMLInputElement;
-	private headerElement!: HTMLElement;
-	private subtitleElement!: HTMLElement;
+	private searchWrap!: HTMLElement;
+	private sectionLabel!: HTMLElement;
+	private emptyState!: HTMLElement;
 
 	private readonly contentDisposables = this._register(new DisposableStore());
 
 	private recentlyOpened: Promise<{ workspaces: Array<IRecentWorkspace | IRecentFolder> }>;
 	private projects: RecentEntry[] = [];
 	private filteredProjects: RecentEntry[] = [];
-
-	private currentView: NavView = 'all';
-	private sortColumn: SortColumn = 'lastModified';
-	private sortDirection: SortDirection = 'desc';
 	private searchQuery: string = '';
 
 	constructor(
@@ -79,8 +69,8 @@ export class LatexProjectsDashboard extends EditorPane {
 	}
 
 	protected override createEditor(parent: HTMLElement): void {
-		this.container = append(parent, $('.latex-dashboard'));
-		this.buildContent();
+		this.container = append(parent, $('.folio-home'));
+		this.buildLayout();
 	}
 
 	override async setInput(input: LatexProjectsDashboardInput, options: undefined, context: IEditorOpenContext, token: CancellationToken): Promise<void> {
@@ -89,7 +79,7 @@ export class LatexProjectsDashboard extends EditorPane {
 	}
 
 	override layout(_dimension: Dimension): void {
-		// The layout is handled by CSS flexbox
+		// CSS handles layout
 	}
 
 	override clearInput(): void {
@@ -98,168 +88,62 @@ export class LatexProjectsDashboard extends EditorPane {
 
 	override focus(): void {
 		super.focus();
-		this.searchInput?.focus();
 	}
 
-	private buildContent(): void {
+	// --- Build the DOM ---
+
+	private buildLayout(): void {
 		clearNode(this.container);
 		this.contentDisposables.clear();
 
-		// Build sidebar
-		this.buildSidebar();
+		const inner = append(this.container, $('.folio-home-inner'));
 
-		// Build main content area
-		this.buildMainContent();
-	}
+		// Brand
+		const brand = append(inner, $('.folio-brand'));
+		append(brand, $('.folio-brand-mark'));
+		const brandName = append(brand, $('.folio-brand-name'));
+		brandName.textContent = 'Folio';
 
-	private buildSidebar(): void {
-		const sidebar = append(this.container, $('.latex-dashboard-sidebar'));
-
-		// Logo
-		const logo = append(sidebar, $('.latex-dashboard-logo'));
-		logo.textContent = 'Folio';
-
-		// New Project button
-		const newProjectBtn = append(sidebar, $('button.latex-dashboard-new-project'));
-		const plusIcon = append(newProjectBtn, $('span'));
+		// New project button
+		const newBtn = append(inner, $('button.folio-new-project'));
+		const plusIcon = append(newBtn, $('span'));
 		plusIcon.classList.add(...ThemeIcon.asClassNameArray(Codicon.add));
-		append(newProjectBtn, document.createTextNode(localize('newProject', 'New Project')));
+		append(newBtn, document.createTextNode(localize('newProject', 'New Project')));
 
-		this.contentDisposables.add(addDisposableListener(newProjectBtn, EventType.CLICK, () => {
+		this.contentDisposables.add(addDisposableListener(newBtn, EventType.CLICK, () => {
 			this.createNewProject();
 		}));
 
-		// Navigation
-		const nav = append(sidebar, $('.latex-dashboard-nav'));
-
-		const navItems: { id: NavView; label: string; icon: ThemeIcon }[] = [
-			{ id: 'all', label: localize('allProjects', 'All Projects'), icon: Codicon.files },
-			{ id: 'yours', label: localize('yourProjects', 'Your Projects'), icon: Codicon.account },
-			{ id: 'trashed', label: localize('archived', 'Archived'), icon: Codicon.archive },
-		];
-
-		for (const item of navItems) {
-			const navItem = append(nav, $('button.latex-dashboard-nav-item'));
-			if (item.id === this.currentView) {
-				navItem.classList.add('active');
-			}
-			const icon = append(navItem, $('span'));
-			icon.classList.add(...ThemeIcon.asClassNameArray(item.icon));
-			append(navItem, document.createTextNode(item.label));
-
-			this.contentDisposables.add(addDisposableListener(navItem, EventType.CLICK, () => {
-				this.setView(item.id);
-			}));
-		}
-
-		// Sidebar footer
-		const footer = append(sidebar, $('.latex-dashboard-sidebar-footer'));
-		const version = append(footer, $('.latex-dashboard-version'));
-		version.textContent = 'Folio v1.0';
-	}
-
-	private buildMainContent(): void {
-		this.mainContent = append(this.container, $('.latex-dashboard-main'));
-
-		// Header
-		this.headerElement = append(this.mainContent, $('.latex-dashboard-header'));
-		this.headerElement.textContent = this.getHeaderText();
-
-		// Subtitle
-		this.subtitleElement = append(this.mainContent, $('.latex-dashboard-subtitle'));
-		this.subtitleElement.textContent = this.getSubtitleText();
-
-		// Search
-		const searchContainer = append(this.mainContent, $('.latex-dashboard-search-container'));
-		const searchWrapper = append(searchContainer, $('.latex-dashboard-search-wrapper'));
-
-		const searchIcon = append(searchWrapper, $('span.latex-dashboard-search-icon'));
+		// Search (hidden until we have projects)
+		this.searchWrap = append(inner, $('.folio-search-wrap'));
+		const searchIcon = append(this.searchWrap, $('span'));
 		searchIcon.classList.add(...ThemeIcon.asClassNameArray(Codicon.search));
 
-		this.searchInput = append(searchWrapper, $('input.latex-dashboard-search')) as HTMLInputElement;
+		this.searchInput = append(this.searchWrap, $('input.folio-search')) as HTMLInputElement;
 		this.searchInput.type = 'text';
-		this.searchInput.placeholder = localize('searchPlaceholder', 'Search projects...');
+		this.searchInput.placeholder = localize('searchPlaceholder', 'Search projects\u2026');
 
 		this.contentDisposables.add(addDisposableListener(this.searchInput, EventType.INPUT, () => {
 			this.searchQuery = this.searchInput.value;
-			this.filterAndRenderProjects();
+			this.filterAndRender();
 		}));
 
-		// Table container
-		const tableContainer = append(this.mainContent, $('.latex-dashboard-table-container'));
-		const table = append(tableContainer, $('table.latex-dashboard-table'));
+		// Section label
+		this.sectionLabel = append(inner, $('.folio-section-label'));
 
-		// Table header
-		const thead = append(table, $('thead'));
-		const headerRow = append(thead, $('tr'));
+		// Project list
+		this.projectList = append(inner, $('.folio-project-list'));
 
-		const columns: { id: SortColumn; label: string }[] = [
-			{ id: 'title', label: localize('project', 'Project') },
-			{ id: 'owner', label: localize('owner', 'Owner') },
-			{ id: 'lastModified', label: localize('lastModified', 'Last Modified') },
-		];
+		// Empty state
+		this.emptyState = append(inner, $('.folio-empty'));
 
-		for (const col of columns) {
-			const th = append(headerRow, $('th'));
-			th.textContent = col.label;
-			const sortIndicator = append(th, $('span.sort-indicator'));
-			if (this.sortColumn === col.id) {
-				th.classList.add('sorted');
-				sortIndicator.textContent = this.sortDirection === 'asc' ? ' ↑' : ' ↓';
-			}
-			this.contentDisposables.add(addDisposableListener(th, EventType.CLICK, () => {
-				this.toggleSort(col.id);
-			}));
-		}
-
-		// Actions column header
-		append(headerRow, $('th')).textContent = '';
-
-		// Table body
-		const tbody = append(table, $('tbody')) as HTMLTableSectionElement;
-		this.tableBody = tbody;
+		// Footer
+		const footer = append(inner, $('.folio-footer'));
+		const footerText = append(footer, $('.folio-footer-text'));
+		footerText.textContent = 'Folio v1.0';
 	}
 
-	private getHeaderText(): string {
-		switch (this.currentView) {
-			case 'all': return localize('allProjectsHeader', 'All Projects');
-			case 'yours': return localize('yourProjectsHeader', 'Your Projects');
-			case 'trashed': return localize('archivedHeader', 'Archived');
-		}
-	}
-
-	private getSubtitleText(): string {
-		const count = this.filteredProjects.length;
-		switch (this.currentView) {
-			case 'all':
-				return count === 1
-					? localize('oneProject', '1 project in your workspace')
-					: localize('nProjects', '{0} projects in your workspace', count);
-			case 'yours':
-				return localize('yourProjectsSubtitle', 'Projects you own');
-			case 'trashed':
-				return localize('archivedSubtitle', 'Archived projects');
-		}
-	}
-
-	private setView(view: NavView): void {
-		this.currentView = view;
-		this.buildContent();
-		this.refreshProjects();
-	}
-
-	private toggleSort(column: SortColumn): void {
-		if (this.sortColumn === column) {
-			this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
-		} else {
-			this.sortColumn = column;
-			this.sortDirection = 'desc';
-		}
-		this.filterAndRenderProjects();
-		// Update header to show sort indicator
-		this.buildContent();
-		this.refreshProjects();
-	}
+	// --- Data ---
 
 	private async refreshProjects(): Promise<void> {
 		const recent = await this.recentlyOpened;
@@ -271,152 +155,73 @@ export class LatexProjectsDashboard extends EditorPane {
 				id: `project-${index}`
 			}));
 
-		this.filterAndRenderProjects();
+		this.filterAndRender();
 	}
 
-	private filterAndRenderProjects(): void {
+	private filterAndRender(): void {
 		let filtered = [...this.projects];
 
-		// Apply search filter
 		if (this.searchQuery) {
-			const query = this.searchQuery.toLowerCase();
-			filtered = filtered.filter(project => {
-				const name = this.getProjectName(project).toLowerCase();
-				return name.includes(query);
-			});
+			const q = this.searchQuery.toLowerCase();
+			filtered = filtered.filter(p => this.getProjectName(p).toLowerCase().includes(q));
 		}
-
-		// Apply view filter
-		if (this.currentView === 'trashed') {
-			// For now, we don't have an archived concept, so show empty
-			filtered = [];
-		}
-
-		// Apply sorting
-		filtered.sort((a, b) => {
-			let comparison = 0;
-			switch (this.sortColumn) {
-				case 'title':
-					comparison = this.getProjectName(a).localeCompare(this.getProjectName(b));
-					break;
-				case 'owner':
-					// All local projects have the same owner
-					comparison = 0;
-					break;
-				case 'lastModified':
-					// We don't have modification time readily available, so sort by order
-					comparison = this.projects.indexOf(a) - this.projects.indexOf(b);
-					break;
-			}
-			return this.sortDirection === 'asc' ? comparison : -comparison;
-		});
 
 		this.filteredProjects = filtered;
-
-		// Update subtitle with count
-		if (this.subtitleElement) {
-			this.subtitleElement.textContent = this.getSubtitleText();
-		}
-
-		this.renderProjectList();
+		this.render();
 	}
 
-	private renderProjectList(): void {
-		clearNode(this.tableBody);
+	// --- Render ---
 
-		if (this.filteredProjects.length === 0) {
-			this.renderEmptyState();
-			return;
-		}
+	private render(): void {
+		const hasProjects = this.projects.length > 0;
+		const hasResults = this.filteredProjects.length > 0;
 
-		for (const project of this.filteredProjects) {
-			this.renderProjectRow(project);
-		}
-	}
+		// Show search only when there are projects
+		this.searchWrap.style.display = hasProjects ? '' : 'none';
 
-	private renderEmptyState(): void {
-		const emptyRow = this.tableBody.insertRow();
-		const emptyCell = emptyRow.insertCell();
-		emptyCell.colSpan = 4;
-
-		const emptyState = append(emptyCell, $('.latex-dashboard-empty'));
-
-		const icon = append(emptyState, $('.latex-dashboard-empty-icon'));
-		icon.classList.add(...ThemeIcon.asClassNameArray(Codicon.file));
-
-		const title = append(emptyState, $('.latex-dashboard-empty-title'));
-		const desc = append(emptyState, $('.latex-dashboard-empty-description'));
-
-		if (this.searchQuery) {
-			title.textContent = localize('noSearchResults', 'No projects found');
-			desc.textContent = localize('noSearchResultsDesc', 'Try a different search term or create a new project.');
-		} else if (this.currentView === 'trashed') {
-			title.textContent = localize('noArchivedProjects', 'No archived projects');
-			desc.textContent = localize('noArchivedProjectsDesc', 'Archived projects will appear here.');
+		// Section label
+		if (hasProjects) {
+			this.sectionLabel.style.display = '';
+			this.sectionLabel.textContent = localize('recentProjects', 'RECENT');
 		} else {
-			title.textContent = localize('noProjects', 'No projects yet');
-			desc.textContent = localize('noProjectsDesc', 'Create your first LaTeX project to get started with Folio.');
+			this.sectionLabel.style.display = 'none';
+		}
 
-			// Add create button in empty state
-			const createBtn = append(emptyState, $('button.latex-dashboard-empty-action'));
-			createBtn.textContent = localize('createFirstProject', 'Create Project');
-			this.contentDisposables.add(addDisposableListener(createBtn, EventType.CLICK, () => {
-				this.createNewProject();
-			}));
+		// Project list
+		clearNode(this.projectList);
+		if (hasResults) {
+			for (const project of this.filteredProjects) {
+				this.renderProjectItem(project);
+			}
+		}
+
+		// Empty state
+		clearNode(this.emptyState);
+		if (!hasResults) {
+			this.renderEmpty(hasProjects);
 		}
 	}
 
-	private renderProjectRow(project: RecentEntry): void {
-		const row = append(this.tableBody, $('tr.project-row'));
-		row.tabIndex = 0;
+	private renderProjectItem(project: RecentEntry): void {
+		const item = append(this.projectList, $('button.folio-project-item'));
+		item.tabIndex = 0;
 
-		// Title cell
-		const titleCell = append(row, $('td'));
-		const titleContainer = append(titleCell, $('.latex-project-title'));
+		// Icon
+		const icon = append(item, $('.folio-project-icon'));
+		const iconSpan = append(icon, $('span'));
+		iconSpan.classList.add(...ThemeIcon.asClassNameArray(Codicon.file));
 
-		const folderIcon = append(titleContainer, $('span.latex-project-icon'));
-		folderIcon.classList.add(...ThemeIcon.asClassNameArray(Codicon.file));
+		// Info
+		const info = append(item, $('.folio-project-info'));
+		const name = append(info, $('.folio-project-name'));
+		name.textContent = this.getProjectName(project);
 
-		const titleText = append(titleContainer, $('span.latex-project-title-text'));
-		titleText.textContent = this.getProjectName(project);
+		const pathEl = append(info, $('.folio-project-path'));
+		const uri = this.getProjectUri(project);
+		pathEl.textContent = this.labelService.getUriLabel(uri, { noPrefix: true });
 
-		// Owner cell
-		const ownerCell = append(row, $('td'));
-		const ownerBadge = append(ownerCell, $('span.latex-owner-badge'));
-		ownerBadge.textContent = localize('you', 'You');
-
-		// Last modified cell
-		const modifiedCell = append(row, $('td'));
-		const modifiedText = append(modifiedCell, $('span.latex-modified-time'));
-		modifiedText.textContent = localize('recently', 'Recently');
-
-		// Actions cell
-		const actionsCell = append(row, $('td'));
-		const actions = append(actionsCell, $('.latex-project-actions'));
-
-		// Open action
-		const openBtn = append(actions, $('button.latex-project-action'));
-		const openIcon = append(openBtn, $('span'));
-		openIcon.classList.add(...ThemeIcon.asClassNameArray(Codicon.folderOpened));
-		append(openBtn, document.createTextNode(localize('open', 'Open')));
-
-		this.contentDisposables.add(addDisposableListener(openBtn, EventType.CLICK, (e) => {
-			e.stopPropagation();
-			this.openProject(project);
-		}));
-
-		// Copy path action
-		const copyBtn = append(actions, $('button.latex-project-action'));
-		const copyIcon = append(copyBtn, $('span'));
-		copyIcon.classList.add(...ThemeIcon.asClassNameArray(Codicon.copy));
-
-		this.contentDisposables.add(addDisposableListener(copyBtn, EventType.CLICK, (e) => {
-			e.stopPropagation();
-			this.copyProjectPath(project);
-		}));
-
-		// Remove action
-		const removeBtn = append(actions, $('button.latex-project-action.delete'));
+		// Remove button
+		const removeBtn = append(item, $('button.folio-project-remove'));
 		const removeIcon = append(removeBtn, $('span'));
 		removeIcon.classList.add(...ThemeIcon.asClassNameArray(Codicon.close));
 
@@ -425,13 +230,12 @@ export class LatexProjectsDashboard extends EditorPane {
 			this.removeFromRecent(project);
 		}));
 
-		// Row click opens project
-		this.contentDisposables.add(addDisposableListener(row, EventType.CLICK, () => {
+		// Click to open
+		this.contentDisposables.add(addDisposableListener(item, EventType.CLICK, () => {
 			this.openProject(project);
 		}));
 
-		// Keyboard navigation
-		this.contentDisposables.add(addDisposableListener(row, EventType.KEY_DOWN, (e: KeyboardEvent) => {
+		this.contentDisposables.add(addDisposableListener(item, EventType.KEY_DOWN, (e: KeyboardEvent) => {
 			if (e.key === 'Enter' || e.key === ' ') {
 				e.preventDefault();
 				this.openProject(project);
@@ -439,12 +243,26 @@ export class LatexProjectsDashboard extends EditorPane {
 		}));
 	}
 
+	private renderEmpty(hasProjects: boolean): void {
+		const iconWrap = append(this.emptyState, $('.folio-empty-icon'));
+		const iconSpan = append(iconWrap, $('span'));
+		iconSpan.classList.add(...ThemeIcon.asClassNameArray(Codicon.file));
+
+		const text = append(this.emptyState, $('.folio-empty-text'));
+		if (hasProjects) {
+			text.textContent = localize('noSearchResults', 'No projects match your search.');
+		} else {
+			text.textContent = localize('noProjectsYet', 'Create your first project to get started.');
+		}
+	}
+
+	// --- Helpers ---
+
 	private getProjectName(project: RecentEntry): string {
 		if (project.label) {
 			return project.label;
 		}
-		const uri = this.getProjectUri(project);
-		return this.labelService.getUriBasenameLabel(uri);
+		return this.labelService.getUriBasenameLabel(this.getProjectUri(project));
 	}
 
 	private getProjectUri(project: RecentEntry): URI {
@@ -463,23 +281,15 @@ export class LatexProjectsDashboard extends EditorPane {
 		}
 	}
 
-	private async copyProjectPath(project: RecentEntry): Promise<void> {
-		const uri = this.getProjectUri(project);
-		const path = this.labelService.getUriLabel(uri, { noPrefix: true });
-		await navigator.clipboard.writeText(path);
-	}
-
 	private async removeFromRecent(project: RecentEntry): Promise<void> {
 		const uri = this.getProjectUri(project);
 		await this.workspacesService.removeRecentlyOpened([uri]);
 	}
 
 	private async createNewProject(): Promise<void> {
-		// Get the default projects folder (~/Folio Projects)
 		const homeDir = this.environmentService.userHome;
 		const projectsBaseUri = URI.joinPath(homeDir, 'Folio Projects');
 
-		// Ensure the base projects folder exists
 		try {
 			const exists = await this.fileService.exists(projectsBaseUri);
 			if (!exists) {
@@ -493,7 +303,6 @@ export class LatexProjectsDashboard extends EditorPane {
 			return;
 		}
 
-		// Ask for project name
 		const projectName = await this.quickInputService.input({
 			prompt: localize('projectNamePrompt', 'Enter a name for your new project'),
 			placeHolder: localize('projectNamePlaceholder', 'My Project'),
@@ -501,11 +310,9 @@ export class LatexProjectsDashboard extends EditorPane {
 				if (!value || value.trim().length === 0) {
 					return localize('projectNameRequired', 'Project name is required');
 				}
-				// Check for invalid characters
 				if (/[<>:"/\\|?*]/.test(value)) {
 					return localize('projectNameInvalid', 'Project name contains invalid characters');
 				}
-				// Check if project already exists
 				const projectUri = URI.joinPath(projectsBaseUri, value.trim());
 				const exists = await this.fileService.exists(projectUri);
 				if (exists) {
@@ -516,21 +323,28 @@ export class LatexProjectsDashboard extends EditorPane {
 		});
 
 		if (!projectName) {
-			return; // User cancelled
+			return;
 		}
 
 		const projectUri = URI.joinPath(projectsBaseUri, projectName.trim());
 
-		// Create the project folder and template files
 		try {
 			await this.fileService.createFolder(projectUri);
 
-			// Create main.tex with template
 			const mainTexContent = this.getLatexTemplate(projectName.trim());
 			const mainTexUri = URI.joinPath(projectUri, 'main.tex');
 			await this.fileService.writeFile(mainTexUri, VSBuffer.fromString(mainTexContent));
 
-			// Open the new project folder
+			// Pre-create workspace settings so the new window opens clean
+			const vscodeDir = URI.joinPath(projectUri, '.vscode');
+			await this.fileService.createFolder(vscodeDir);
+			const settingsUri = URI.joinPath(vscodeDir, 'settings.json');
+			const initialSettings = {
+				'workbench.startupEditor': 'none',
+				'latex-workshop.latex.autoBuild.run': 'onSave',
+			};
+			await this.fileService.writeFile(settingsUri, VSBuffer.fromString(JSON.stringify(initialSettings, null, '\t')));
+
 			await this.hostService.openWindow([{ folderUri: projectUri }]);
 		} catch (error) {
 			await this.dialogService.error(

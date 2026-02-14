@@ -3,535 +3,418 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-/* Folio Dashboard - A modern LaTeX project manager */
+/* Folio Dashboard  - Hardcoded monochrome palette, no theme dependency */
 
-/* ===== Hide VS Code UI when Folio is active ===== */
+/* ===== Force entire window to Folio Light when dashboard is active ===== */
 
-/* Hide the entire tabs bar */
-body:has(.latex-dashboard) .part.editor > .content .editor-group-container > .title {
+body:has(.folio-home) {
+	background-color: #ffffff !important;
+}
+body:has(.folio-home) .monaco-workbench {
+	background-color: #ffffff !important;
+}
+body:has(.folio-home) .part.titlebar {
+	background-color: #ffffff !important;
+	border-bottom: none !important;
+}
+body:has(.folio-home) .part.titlebar * {
+	color: #1c1c1e !important;
+}
+body:has(.folio-home) .part.editor {
+	background-color: #ffffff !important;
+}
+body:has(.folio-home) .editor-group-container {
+	background-color: #ffffff !important;
+}
+body:has(.folio-home) .part.editor > .content .editor-group-container > .title {
 	display: none !important;
 }
-
-/* Hide the title bar command center (search) */
-body:has(.latex-dashboard) .titlebar-center {
+body:has(.folio-home) .titlebar-center {
 	display: none !important;
 }
-
-/* Hide title bar right side (layout icons) */
-body:has(.latex-dashboard) .titlebar-right > .window-appicon,
-body:has(.latex-dashboard) .titlebar-right .action-item {
+body:has(.folio-home) .titlebar-right > .window-appicon,
+body:has(.folio-home) .titlebar-right .action-item {
 	display: none !important;
 }
-
-/* Hide the entire right titlebar section */
-body:has(.latex-dashboard) .titlebar-right {
+body:has(.folio-home) .titlebar-right {
 	visibility: hidden !important;
 }
-
-/* Hide status bar */
-body:has(.latex-dashboard) .part.statusbar {
+body:has(.folio-home) .part.statusbar {
 	display: none !important;
 }
-
-/* Hide activity bar */
-body:has(.latex-dashboard) .part.activitybar {
+body:has(.folio-home) .part.activitybar {
 	display: none !important;
 }
-
-/* Hide sidebar */
-body:has(.latex-dashboard) .part.sidebar {
+body:has(.folio-home) .part.sidebar {
 	display: none !important;
 }
-
-/* Hide panel */
-body:has(.latex-dashboard) .part.panel {
+body:has(.folio-home) .part.panel {
 	display: none !important;
 }
-
-/* Hide auxiliarybar */
-body:has(.latex-dashboard) .part.auxiliarybar {
+body:has(.folio-home) .part.auxiliarybar {
 	display: none !important;
 }
-
-/* Hide navigation buttons in title bar */
-body:has(.latex-dashboard) .titlebar-left .window-controls-container,
-body:has(.latex-dashboard) .titlebar-left .navigation-actions {
+body:has(.folio-home) .titlebar-left .window-controls-container,
+body:has(.folio-home) .titlebar-left .navigation-actions {
 	display: none !important;
 }
-
-/* Make the editor take full space */
-body:has(.latex-dashboard) .part.editor {
+body:has(.folio-home) .part.editor {
 	top: 0 !important;
 }
 
-/* ===== End Hide UI ===== */
+/* Force quick input widget to Folio Light */
+body:has(.folio-home) .quick-input-widget {
+	background-color: #f0f0f2 !important;
+	border: 1px solid #d5d5da !important;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+	border-radius: 10px !important;
+	overflow: hidden !important;
+}
+body:has(.folio-home) .quick-input-widget .quick-input-header {
+	background-color: #f0f0f2 !important;
+}
+body:has(.folio-home) .quick-input-widget .quick-input-header .quick-input-and-message {
+	background-color: #f0f0f2 !important;
+}
+body:has(.folio-home) .quick-input-widget input[type="text"] {
+	background-color: #ffffff !important;
+	color: #1c1c1e !important;
+	border: 1px solid #d5d5da !important;
+	border-radius: 6px !important;
+}
+body:has(.folio-home) .quick-input-widget input[type="text"]:focus {
+	border-color: #8e8e93 !important;
+	outline: none !important;
+}
+body:has(.folio-home) .quick-input-widget .quick-input-message {
+	color: #6e6e73 !important;
+}
+body:has(.folio-home) .quick-input-widget .quick-input-action .codicon {
+	color: #6e6e73 !important;
+}
+body:has(.folio-home) .quick-input-widget .quick-input-list-entry {
+	color: #1c1c1e !important;
+}
+body:has(.folio-home) .quick-input-widget .quick-input-list-entry:hover {
+	background-color: #e8e8ec !important;
+}
 
-.latex-dashboard {
+/* ===== Layout ===== */
+
+.folio-home {
 	display: flex;
+	flex-direction: column;
+	align-items: center;
 	height: 100%;
 	width: 100%;
-	background-color: var(--vscode-editor-background);
-	font-family: var(--vscode-font-family);
-	overflow: hidden;
+	background-color: #ffffff;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+	overflow-y: auto;
+	overflow-x: hidden;
+	-webkit-font-smoothing: antialiased;
 }
 
-/* ===== Sidebar ===== */
-.latex-dashboard-sidebar {
-	width: 280px;
-	min-width: 280px;
-	padding: 32px 24px;
-	background-color: var(--vscode-sideBar-background);
-	display: flex;
-	flex-direction: column;
-	border-right: 1px solid var(--vscode-panel-border);
+.folio-home *,
+.folio-home *::before,
+.folio-home *::after {
+	box-sizing: border-box;
 }
 
-/* Logo */
-.latex-dashboard-logo {
-	font-size: 26px;
-	font-weight: 700;
-	letter-spacing: -0.5px;
-	margin-bottom: 32px;
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	color: var(--vscode-foreground);
-}
+/* ===== Centered container ===== */
 
-.latex-dashboard-logo::before {
-	content: '';
-	width: 32px;
-	height: 32px;
-	background: linear-gradient(135deg, #a5b4fc 0%, #818cf8 100%);
-	border-radius: 8px;
-	flex-shrink: 0;
-	opacity: 0.9;
-}
-
-/* New Project Button */
-.latex-dashboard-new-project {
+.folio-home-inner {
 	width: 100%;
-	padding: 12px 20px;
-	margin-bottom: 28px;
-	background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
-	color: white;
-	border: none;
-	border-radius: 10px;
-	cursor: pointer;
-	font-size: 14px;
-	font-weight: 600;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: 10px;
-	transition: all 0.2s ease;
-	opacity: 0.95;
-}
-
-.latex-dashboard-new-project:hover {
-	opacity: 1;
-	transform: translateY(-1px);
-}
-
-.latex-dashboard-new-project:active {
-	transform: translateY(0);
-}
-
-.latex-dashboard-new-project:focus {
-	outline: 2px solid rgba(129, 140, 248, 0.5);
-	outline-offset: 2px;
-}
-
-/* Navigation */
-.latex-dashboard-nav {
+	max-width: 480px;
+	padding: 72px 24px 48px;
 	display: flex;
 	flex-direction: column;
-	gap: 2px;
+	min-height: 100%;
 }
 
-.latex-dashboard-nav-item {
-	padding: 10px 14px;
-	border-radius: 8px;
-	cursor: pointer;
-	color: var(--vscode-foreground);
-	font-size: 14px;
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	border: none;
-	background: transparent;
-	text-align: left;
-	width: 100%;
-	transition: all 0.15s ease;
-	opacity: 0.8;
+/* ===== Brand ===== */
+
+.folio-brand {
+	margin-bottom: 40px;
 }
 
-.latex-dashboard-nav-item:hover {
-	background-color: var(--vscode-list-hoverBackground);
-	opacity: 1;
+.folio-brand-mark {
+	display: none;
 }
 
-.latex-dashboard-nav-item.active {
-	background-color: var(--vscode-list-activeSelectionBackground);
-	color: var(--vscode-list-activeSelectionForeground);
-	opacity: 1;
-}
-
-.latex-dashboard-nav-item:focus {
-	outline: 2px solid var(--vscode-focusBorder);
-	outline-offset: -2px;
-}
-
-/* Sidebar footer */
-.latex-dashboard-sidebar-footer {
-	margin-top: auto;
-	padding-top: 24px;
-}
-
-.latex-dashboard-version {
-	font-size: 11px;
-	color: var(--vscode-descriptionForeground);
-	opacity: 0.5;
-}
-
-/* ===== Main Content ===== */
-.latex-dashboard-main {
-	flex: 1;
-	padding: 40px 56px;
-	overflow: auto;
-	display: flex;
-	flex-direction: column;
-}
-
-.latex-dashboard-header {
-	font-size: 28px;
+.folio-brand-name {
+	font-size: 20px;
 	font-weight: 600;
-	margin-bottom: 6px;
-	color: var(--vscode-foreground);
+	color: #3c3c3c;
 	letter-spacing: -0.3px;
 }
 
-.latex-dashboard-subtitle {
-	font-size: 14px;
-	color: var(--vscode-descriptionForeground);
-	margin-bottom: 28px;
-}
+/* ===== New project button ===== */
 
-/* Search */
-.latex-dashboard-search-container {
-	margin-bottom: 24px;
-}
-
-.latex-dashboard-search-wrapper {
-	position: relative;
-	display: inline-block;
-	width: 100%;
-	max-width: 400px;
-}
-
-.latex-dashboard-search-icon {
-	position: absolute;
-	left: 14px;
-	top: 50%;
-	transform: translateY(-50%);
-	color: var(--vscode-input-placeholderForeground);
-	pointer-events: none;
-	opacity: 0.6;
-}
-
-.latex-dashboard-search {
-	width: 100%;
-	padding: 12px 16px 12px 42px;
-	border: 1px solid var(--vscode-input-border);
-	background-color: var(--vscode-input-background);
-	color: var(--vscode-input-foreground);
-	border-radius: 8px;
-	font-size: 14px;
-	outline: none;
-	transition: border-color 0.15s ease;
-}
-
-.latex-dashboard-search::placeholder {
-	color: var(--vscode-input-placeholderForeground);
-}
-
-.latex-dashboard-search:focus {
-	border-color: var(--vscode-focusBorder);
-}
-
-/* ===== Project Table ===== */
-.latex-dashboard-table-container {
-	flex: 1;
-	overflow: auto;
-	border-radius: 10px;
-	border: 1px solid var(--vscode-panel-border);
-	background-color: var(--vscode-editor-background);
-}
-
-.latex-dashboard-table {
-	width: 100%;
-	border-collapse: collapse;
-	table-layout: fixed;
-}
-
-.latex-dashboard-table th {
-	text-align: left;
-	padding: 14px 20px;
-	background-color: color-mix(in srgb, var(--vscode-editor-background) 95%, var(--vscode-foreground) 5%);
-	border-bottom: 1px solid var(--vscode-panel-border);
-	font-weight: 500;
-	font-size: 12px;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-	color: var(--vscode-descriptionForeground);
-	cursor: pointer;
-	user-select: none;
-	transition: color 0.15s ease;
-	position: sticky;
-	top: 0;
-	z-index: 1;
-}
-
-.latex-dashboard-table th:hover {
-	color: var(--vscode-foreground);
-}
-
-.latex-dashboard-table th .sort-indicator {
-	margin-left: 4px;
-	opacity: 0.5;
-}
-
-.latex-dashboard-table th.sorted {
-	color: var(--vscode-foreground);
-}
-
-.latex-dashboard-table th.sorted .sort-indicator {
-	opacity: 1;
-}
-
-.latex-dashboard-table td {
-	padding: 14px 20px;
-	border-bottom: 1px solid color-mix(in srgb, var(--vscode-panel-border) 50%, transparent);
-	color: var(--vscode-foreground);
-	font-size: 14px;
-	vertical-align: middle;
-}
-
-.latex-dashboard-table tr.project-row {
-	cursor: pointer;
-	transition: background-color 0.1s ease;
-}
-
-.latex-dashboard-table tr.project-row:hover {
-	background-color: var(--vscode-list-hoverBackground);
-}
-
-.latex-dashboard-table tr.project-row:focus {
-	outline: none;
-	background-color: var(--vscode-list-hoverBackground);
-}
-
-.latex-dashboard-table tr.project-row:last-child td {
-	border-bottom: none;
-}
-
-/* Column widths */
-.latex-dashboard-table th:nth-child(1),
-.latex-dashboard-table td:nth-child(1) {
-	width: 45%;
-}
-
-.latex-dashboard-table th:nth-child(2),
-.latex-dashboard-table td:nth-child(2) {
-	width: 15%;
-}
-
-.latex-dashboard-table th:nth-child(3),
-.latex-dashboard-table td:nth-child(3) {
-	width: 22%;
-}
-
-.latex-dashboard-table th:nth-child(4),
-.latex-dashboard-table td:nth-child(4) {
-	width: 18%;
-}
-
-/* Project title cell */
-.latex-project-title {
-	display: flex;
-	align-items: center;
-	gap: 14px;
-	font-weight: 500;
-}
-
-.latex-project-icon {
-	width: 36px;
-	height: 36px;
+.folio-new-project {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background-color: color-mix(in srgb, var(--vscode-editor-background) 90%, #818cf8 10%);
+	gap: 7px;
+	width: 100%;
+	padding: 11px 20px;
+	margin-bottom: 32px;
+	background: #e8e8ec;
+	color: #3c3c3c;
+	border: 1px solid #d5d5da;
 	border-radius: 8px;
-	color: #818cf8;
-	flex-shrink: 0;
+	font-family: inherit;
+	font-size: 13px;
+	font-weight: 600;
+	letter-spacing: -0.05px;
+	cursor: pointer;
+	transition: background 0.12s ease;
 }
 
-.latex-project-title-text {
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
+.folio-new-project:hover {
+	background: #d5d5da;
 }
 
-/* Owner badge */
-.latex-owner-badge {
-	display: inline-flex;
-	align-items: center;
-	padding: 4px 10px;
-	background-color: var(--vscode-badge-background);
-	color: var(--vscode-badge-foreground);
-	border-radius: 12px;
-	font-size: 12px;
-	font-weight: 500;
+.folio-new-project:active {
+	background: #c7c7cc;
 }
 
-/* Modified time */
-.latex-modified-time {
-	color: var(--vscode-descriptionForeground);
+.folio-new-project:focus-visible {
+	outline: 2px solid #8e8e9340;
+	outline-offset: 2px;
+}
+
+.folio-new-project .codicon {
 	font-size: 13px;
 }
 
-/* Action buttons */
-.latex-project-actions {
-	display: flex;
-	gap: 4px;
-	opacity: 0;
-	transition: opacity 0.1s ease;
+/* ===== Search ===== */
+
+.folio-search-wrap {
+	position: relative;
+	margin-bottom: 24px;
 }
 
-.latex-dashboard-table tr:hover .latex-project-actions {
+.folio-search-wrap .codicon {
+	position: absolute;
+	left: 11px;
+	top: 50%;
+	transform: translateY(-50%);
+	color: #c7c7cc;
+	font-size: 13px;
+	pointer-events: none;
+}
+
+.folio-search {
+	width: 100%;
+	padding: 9px 12px 9px 33px;
+	background: #f5f5f7;
+	border: 1px solid #f5f5f7;
+	border-radius: 7px;
+	font-family: inherit;
+	font-size: 13px;
+	color: #1c1c1e;
+	outline: none;
+	transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.folio-search::placeholder {
+	color: #c7c7cc;
+}
+
+.folio-search:focus {
+	background: #ffffff;
+	border-color: #d5d5da;
+}
+
+/* ===== Section label ===== */
+
+.folio-section-label {
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.5px;
+	color: #c7c7cc;
+	margin-bottom: 4px;
+	padding-left: 2px;
+}
+
+/* ===== Project list ===== */
+
+.folio-project-list {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+
+.folio-project-item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 10px 12px;
+	border-radius: 8px;
+	cursor: pointer;
+	border: none;
+	background: transparent;
+	text-align: left;
+	width: 100%;
+	transition: background 0.08s ease;
+}
+
+.folio-project-item:hover {
+	background: #f5f5f7;
+}
+
+.folio-project-item:focus-visible {
+	outline: 2px solid #8e8e9340;
+	outline-offset: -2px;
+}
+
+.folio-project-item:active {
+	background: #ededf0;
+}
+
+.folio-project-icon {
+	width: 32px;
+	height: 32px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: #f0f0f2;
+	border-radius: 7px;
+	flex-shrink: 0;
+}
+
+.folio-project-icon .codicon {
+	font-size: 14px;
+	color: #aeaeb2;
+}
+
+.folio-project-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.folio-project-name {
+	font-size: 13px;
+	font-weight: 500;
+	color: #1c1c1e;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	line-height: 1.25;
+}
+
+.folio-project-path {
+	font-size: 11px;
+	color: #c7c7cc;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	line-height: 1.25;
+	margin-top: 2px;
+}
+
+.folio-project-remove {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	border: none;
+	background: transparent;
+	border-radius: 5px;
+	cursor: pointer;
+	color: #d5d5da;
+	opacity: 0;
+	transition: opacity 0.08s ease, color 0.08s ease;
+	flex-shrink: 0;
+}
+
+.folio-project-item:hover .folio-project-remove {
 	opacity: 1;
 }
 
-.latex-project-action {
-	padding: 6px 10px;
-	border: none;
-	background-color: var(--vscode-button-secondaryBackground);
-	color: var(--vscode-button-secondaryForeground);
-	cursor: pointer;
-	border-radius: 6px;
-	font-size: 12px;
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	transition: background-color 0.1s ease;
+.folio-project-remove:hover {
+	color: #ff3b30;
 }
 
-.latex-project-action:hover {
-	background-color: var(--vscode-button-secondaryHoverBackground);
+.folio-project-remove .codicon {
+	font-size: 11px;
 }
 
-.latex-project-action:focus {
-	outline: 2px solid var(--vscode-focusBorder);
-	outline-offset: 1px;
-}
+/* ===== Empty state ===== */
 
-.latex-project-action.delete:hover {
-	background-color: color-mix(in srgb, var(--vscode-errorForeground) 15%, transparent);
-	color: var(--vscode-errorForeground);
-}
-
-/* ===== Empty State ===== */
-.latex-dashboard-empty {
+.folio-empty {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	justify-content: center;
-	padding: 80px 20px;
+	padding: 56px 20px;
 	text-align: center;
 }
 
-.latex-dashboard-empty-icon {
-	width: 72px;
-	height: 72px;
+.folio-empty-icon {
+	width: 40px;
+	height: 40px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background-color: color-mix(in srgb, var(--vscode-editor-background) 90%, #818cf8 10%);
-	border-radius: 16px;
-	margin-bottom: 20px;
-	font-size: 28px;
-	color: #818cf8;
-	opacity: 0.8;
+	background: #f5f5f7;
+	border-radius: 10px;
+	margin-bottom: 14px;
 }
 
-.latex-dashboard-empty-title {
-	font-size: 18px;
-	font-weight: 600;
-	margin-bottom: 8px;
-	color: var(--vscode-foreground);
+.folio-empty-icon .codicon {
+	font-size: 16px;
+	color: #d5d5da;
 }
 
-.latex-dashboard-empty-description {
-	font-size: 14px;
-	color: var(--vscode-descriptionForeground);
-	max-width: 320px;
+.folio-empty-text {
+	font-size: 13px;
+	color: #c7c7cc;
 	line-height: 1.5;
 }
 
-.latex-dashboard-empty-action {
-	margin-top: 20px;
-	padding: 10px 20px;
-	background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
-	color: white;
-	border: none;
-	border-radius: 8px;
-	cursor: pointer;
-	font-size: 14px;
-	font-weight: 500;
-	transition: opacity 0.15s ease;
-	opacity: 0.95;
+/* ===== Footer ===== */
+
+.folio-footer {
+	margin-top: auto;
+	padding-top: 40px;
+	padding-bottom: 8px;
+	text-align: center;
 }
 
-.latex-dashboard-empty-action:hover {
-	opacity: 1;
+.folio-footer-text {
+	font-size: 10px;
+	color: #e5e5ea;
+	letter-spacing: 0.02em;
 }
 
 /* ===== Scrollbar ===== */
-.latex-dashboard-main::-webkit-scrollbar,
-.latex-dashboard-table-container::-webkit-scrollbar {
-	width: 8px;
-	height: 8px;
+
+.folio-home::-webkit-scrollbar {
+	width: 5px;
 }
 
-.latex-dashboard-main::-webkit-scrollbar-track,
-.latex-dashboard-table-container::-webkit-scrollbar-track {
+.folio-home::-webkit-scrollbar-track {
 	background: transparent;
 }
 
-.latex-dashboard-main::-webkit-scrollbar-thumb,
-.latex-dashboard-table-container::-webkit-scrollbar-thumb {
-	background-color: var(--vscode-scrollbarSlider-background);
-	border-radius: 4px;
+.folio-home::-webkit-scrollbar-thumb {
+	background-color: #e5e5ea;
+	border-radius: 3px;
 }
 
-.latex-dashboard-main::-webkit-scrollbar-thumb:hover,
-.latex-dashboard-table-container::-webkit-scrollbar-thumb:hover {
-	background-color: var(--vscode-scrollbarSlider-hoverBackground);
+.folio-home::-webkit-scrollbar-thumb:hover {
+	background-color: #d5d5da;
 }
 
-/* ===== Responsive adjustments ===== */
-@media (max-width: 900px) {
-	.latex-dashboard-sidebar {
-		width: 240px;
-		min-width: 240px;
-		padding: 24px 16px;
+/* ===== Responsive ===== */
+
+@media (max-width: 640px) {
+	.folio-home-inner {
+		padding: 48px 20px 36px;
 	}
 
-	.latex-dashboard-main {
-		padding: 32px 24px;
-	}
-
-	.latex-dashboard-header {
-		font-size: 24px;
+	.folio-brand {
+		margin-bottom: 32px;
 	}
 }
