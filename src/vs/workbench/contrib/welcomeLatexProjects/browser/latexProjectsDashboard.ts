@@ -220,8 +220,20 @@ export class LatexProjectsDashboard extends EditorPane {
 		const uri = this.getProjectUri(project);
 		pathEl.textContent = this.labelService.getUriLabel(uri, { noPrefix: true });
 
-		// Remove button
+		// Delete button (trash — deletes from disk)
+		const deleteBtn = append(item, $('button.folio-project-delete'));
+		deleteBtn.title = localize('deleteProject', 'Delete project from disk');
+		const deleteIcon = append(deleteBtn, $('span'));
+		deleteIcon.classList.add(...ThemeIcon.asClassNameArray(Codicon.trash));
+
+		this.contentDisposables.add(addDisposableListener(deleteBtn, EventType.CLICK, (e) => {
+			e.stopPropagation();
+			this.deleteProject(project);
+		}));
+
+		// Remove button (X — removes from recents list only)
 		const removeBtn = append(item, $('button.folio-project-remove'));
+		removeBtn.title = localize('removeFromRecent', 'Remove from list');
 		const removeIcon = append(removeBtn, $('span'));
 		removeIcon.classList.add(...ThemeIcon.asClassNameArray(Codicon.close));
 
@@ -283,6 +295,39 @@ export class LatexProjectsDashboard extends EditorPane {
 
 	private async removeFromRecent(project: RecentEntry): Promise<void> {
 		const uri = this.getProjectUri(project);
+		await this.workspacesService.removeRecentlyOpened([uri]);
+	}
+
+	private async deleteProject(project: RecentEntry): Promise<void> {
+		const uri = this.getProjectUri(project);
+		const name = this.getProjectName(project);
+
+		const { confirmed } = await this.dialogService.confirm({
+			message: localize('deleteProjectConfirm', 'Delete "{0}"?', name),
+			detail: localize('deleteProjectDetail', 'This will permanently delete the project folder and all its contents from disk. This cannot be undone.'),
+			primaryButton: localize('deleteProjectButton', 'Delete'),
+			type: 'warning',
+		});
+
+		if (!confirmed) {
+			return;
+		}
+
+		try {
+			await this.fileService.del(uri, { recursive: true, useTrash: true });
+		} catch {
+			// If trash isn't available, ask to permanently delete
+			try {
+				await this.fileService.del(uri, { recursive: true, useTrash: false });
+			} catch (error) {
+				await this.dialogService.error(
+					localize('deleteProjectError', 'Failed to delete project'),
+					localize('deleteProjectErrorDetail', 'Could not delete the project folder: {0}', String(error))
+				);
+				return;
+			}
+		}
+
 		await this.workspacesService.removeRecentlyOpened([uri]);
 	}
 

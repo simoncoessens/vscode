@@ -313,6 +313,7 @@ body:has(.folio-home) .quick-input-widget .quick-input-list-entry:hover {
 	margin-top: 2px;
 }
 
+.folio-project-delete,
 .folio-project-remove {
 	display: flex;
 	align-items: center;
@@ -329,14 +330,20 @@ body:has(.folio-home) .quick-input-widget .quick-input-list-entry:hover {
 	flex-shrink: 0;
 }
 
+.folio-project-item:hover .folio-project-delete,
 .folio-project-item:hover .folio-project-remove {
 	opacity: 1;
 }
 
-.folio-project-remove:hover {
+.folio-project-delete:hover {
 	color: #ff3b30;
 }
 
+.folio-project-remove:hover {
+	color: #8e8e93;
+}
+
+.folio-project-delete .codicon,
 .folio-project-remove .codicon {
 	font-size: 11px;
 }

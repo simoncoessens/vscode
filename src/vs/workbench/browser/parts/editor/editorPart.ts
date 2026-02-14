@@ -484,6 +484,11 @@ export class EditorPart extends Part<IEditorPartMemento> implements IEditorPart,
 		}
 		countGroups(layout.groups);
 
+		// Folio: reject layouts that would create more than 3 groups
+		if (this.groupViews.size >= 3 && layoutGroupsCount > 3) {
+			return;
+		}
+
 		// If we currently have too many groups, merge them into the last one
 		let currentGroupViews = this.getGroups(GroupsOrder.GRID_APPEARANCE);
 		if (layoutGroupsCount < currentGroupViews.length) {
@@ -571,6 +576,17 @@ export class EditorPart extends Part<IEditorPartMemento> implements IEditorPart,
 	}
 
 	addGroup(location: IEditorGroupView | GroupIdentifier, direction: GroupDirection, groupToCopy?: IEditorGroupView): IEditorGroupView {
+		// Folio: cap at 3 editor groups — return the first unlocked group instead of creating a 4th
+		if (this.groupViews.size >= 3) {
+			for (const group of this.getGroups(GroupsOrder.GRID_APPEARANCE)) {
+				if (!group.isLocked) {
+					return group;
+				}
+			}
+			// All locked — return active group as fallback
+			return this._activeGroup;
+		}
+
 		const locationView = this.assertGroupView(location);
 
 		let newGroupView: IEditorGroupView;

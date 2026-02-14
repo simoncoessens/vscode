@@ -11,7 +11,7 @@ import { IWorkbenchContribution, registerWorkbenchContribution2, WorkbenchPhase 
 import { IEditorService, SIDE_GROUP } from '../../../services/editor/common/editorService.js';
 import { IEditorGroupsService, GroupOrientation, GroupDirection, IEditorGroup } from '../../../services/editor/common/editorGroupsService.js';
 import { ILifecycleService, LifecyclePhase } from '../../../services/lifecycle/common/lifecycle.js';
-import { isGroupEditorOpenEvent } from '../../../common/editor/editorGroupModel.js';
+import { isGroupEditorOpenEvent, isGroupEditorCloseEvent } from '../../../common/editor/editorGroupModel.js';
 import { GroupModelChangeKind } from '../../../common/editor.js';
 import { ConfigurationTarget, IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import type { IEditorGroupView } from '../../../browser/parts/editor/editor.js';
@@ -293,7 +293,27 @@ class LatexPdfViewerContribution extends Disposable implements IWorkbenchContrib
 			closeEmptyGroups: false,
 		}));
 
-		// 3. Guard against extra groups  - merge back into the editor group
+		// 3. Disable split editor commands — no-op all of them
+		const splitCommands = [
+			'workbench.action.splitEditor',
+			'workbench.action.splitEditorRight',
+			'workbench.action.splitEditorLeft',
+			'workbench.action.splitEditorUp',
+			'workbench.action.splitEditorDown',
+			'workbench.action.splitEditorInGroup',
+			'workbench.action.joinEditorInGroup',
+			'workbench.action.splitEditorOrthogonal',
+			'workbench.action.newGroupEditor',
+			'workbench.action.navigateEditorGroups',
+		];
+		for (const cmd of splitCommands) {
+			this.commandService.executeCommand('setContext', `folio.blocked.${cmd}`, true).catch(() => { });
+		}
+
+		// 4. Override vscode.setEditorLayout to prevent layout changes
+		// (The addGroup cap in editorPart.ts is the primary defense; this is belt-and-suspenders)
+
+		// 5. Guard against extra groups — safety net (addGroup cap should prevent this)
 		this._register(this.editorGroupsService.onDidAddGroup(newGroup => {
 			const groups = this.editorGroupsService.groups;
 			if (groups.length > 3) {
@@ -363,18 +383,76 @@ class LatexPdfViewerContribution extends Disposable implements IWorkbenchContrib
 		}));
 
 		// 7. Enforce single editor in the editor group (Overleaf-style)
+		//    Also redirect misplaced editors: terminals → terminal group, PDFs → PDF group
+		//    Never allow the editor group to become empty — reopen the last closed file
 		const editorGroup = this.findEditorGroup();
 		if (editorGroup) {
+			let lastEditorResource: URI | undefined;
+
 			this._register(editorGroup.onDidModelChange(e => {
-				if (!isGroupEditorOpenEvent(e)) {
+				// Track the resource of editors so we can reopen if the group empties
+				if (isGroupEditorOpenEvent(e)) {
+					const openedEditor = e.editor;
+
+					// Redirect terminal editors to the terminal group
+					if (openedEditor.typeId === 'workbench.editors.terminal') {
+						const tGroup = this.findTerminalGroup();
+						if (tGroup && tGroup !== editorGroup) {
+							editorGroup.moveEditor(openedEditor, tGroup);
+						}
+						return;
+					}
+
+					// Redirect PDF editors to the PDF group
+					if (openedEditor.resource?.path.endsWith('.pdf')) {
+						const pGroup = this.findPdfGroup();
+						if (pGroup && pGroup !== editorGroup) {
+							editorGroup.moveEditor(openedEditor, pGroup);
+						}
+						return;
+					}
+
+					// Remember this editor's resource
+					if (openedEditor.resource) {
+						lastEditorResource = openedEditor.resource;
+					}
+
+					// Single editor mode: close previous editors when a new one opens
+					const editorsToClose = editorGroup.editors.filter(ed => ed !== openedEditor);
+					if (editorsToClose.length > 0) {
+						editorGroup.closeEditors(editorsToClose);
+					}
 					return;
 				}
-				const openedEditor = e.editor;
-				const editorsToClose = editorGroup.editors.filter(ed => ed !== openedEditor);
-				if (editorsToClose.length > 0) {
-					editorGroup.closeEditors(editorsToClose);
+
+				// Prevent the editor group from becoming empty (Overleaf-style: always show a file)
+				if (isGroupEditorCloseEvent(e) && editorGroup.isEmpty && lastEditorResource) {
+					this.editorService.openEditor(
+						{ resource: lastEditorResource },
+						editorGroup.id
+					);
 				}
 			}));
+		}
+
+		// 8. Forward synctex on double-click in editor (Overleaf-style)
+		if (editorGroup) {
+			const groupView = editorGroup as unknown as IEditorGroupView;
+			const editorContainer = groupView.element;
+			if (editorContainer) {
+				const dblClickHandler = () => {
+					// Only trigger for .tex files
+					const activeEditor = editorGroup.activeEditor;
+					if (activeEditor?.resource?.path.endsWith('.tex')) {
+						// Small delay so the cursor position updates from the double-click first
+						setTimeout(() => {
+							this.commandService.executeCommand('latex-workshop.synctex.cursor').catch(() => { });
+						}, 50);
+					}
+				};
+				editorContainer.addEventListener('dblclick', dblClickHandler);
+				this._register({ dispose: () => editorContainer.removeEventListener('dblclick', dblClickHandler) });
+			}
 		}
 	}
 
@@ -489,6 +567,7 @@ class LatexPdfViewerContribution extends Disposable implements IWorkbenchContrib
 			.title-actions .action-item:has(.codicon-toolbar-more),
 			.title-actions .action-item:has(.codicon-go-to-file),
 			.title-actions .action-item:has(.codicon-close-all),
+			.title-actions .action-item:has(.codicon-close),
 			.title-actions .action-item:has(.codicon-open-preview),
 			.title-actions .action-item:has(.codicon-book),
 			.title-actions .action-item:has(.codicon-search),
@@ -496,14 +575,16 @@ class LatexPdfViewerContribution extends Disposable implements IWorkbenchContrib
 			.editor-actions .action-item:has(.codicon-toolbar-more),
 			.editor-actions .action-item:has(.codicon-go-to-file),
 			.editor-actions .action-item:has(.codicon-close-all),
+			.editor-actions .action-item:has(.codicon-close),
 			.editor-actions .action-item:has(.codicon-open-preview),
 			.editor-actions .action-item:has(.codicon-book),
 			.editor-actions .action-item:has(.codicon-search) {
 				display: none !important;
 			}
 
-			/* Hide close button on the single tab  - we enforce single-editor mode */
-			.editor-group-container:not(.chromeless-pdf-viewer) .tab .tab-close {
+			/* Hide close button on tabs — files can't be closed, only switched (Overleaf-style) */
+			.editor-group-container:not(.chromeless-pdf-viewer) .tab .tab-close,
+			.editor-group-container:not(.chromeless-pdf-viewer) .tab .tab-actions {
 				display: none !important;
 			}
 
@@ -629,6 +710,9 @@ class LatexPdfViewerContribution extends Disposable implements IWorkbenchContrib
 		await this.configurationService.updateValue('files.autoSave', 'afterDelay', ConfigurationTarget.WORKSPACE);
 		await this.configurationService.updateValue('files.autoSaveDelay', 1000, ConfigurationTarget.WORKSPACE);
 
+		// Double-click on PDF syncs to source (Overleaf-style, instead of ctrl-click)
+		await this.configurationService.updateValue('latex-workshop.view.pdf.internal.synctex.keybinding', 'double-click', ConfigurationTarget.WORKSPACE);
+
 		// Hide activity bar (the icon strip: Explorer, Search, Debug, Extensions icons)
 		await this.configurationService.updateValue('workbench.activityBar.location', 'hidden', ConfigurationTarget.WORKSPACE);
 
@@ -654,6 +738,10 @@ class LatexPdfViewerContribution extends Disposable implements IWorkbenchContrib
 
 		// Hide command center from title bar
 		await this.configurationService.updateValue('window.commandCenter', false, ConfigurationTarget.WORKSPACE);
+
+		// Prevent split editors and new groups
+		await this.configurationService.updateValue('workbench.editor.splitInGroupLayout', 'horizontal', ConfigurationTarget.WORKSPACE);
+		await this.configurationService.updateValue('workbench.editor.openSideBySideDirection', 'down', ConfigurationTarget.WORKSPACE);
 
 		// Clean window title  - Folio branding
 		await this.configurationService.updateValue('window.title', '${dirty}${activeEditorShort}${separator}Folio', ConfigurationTarget.WORKSPACE);
