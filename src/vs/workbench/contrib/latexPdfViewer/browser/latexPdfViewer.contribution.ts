@@ -28,6 +28,7 @@ class LatexPdfViewerContribution extends Disposable implements IWorkbenchContrib
 	private pdfOpened = false;
 	private terminalOpened = false;
 	private chromeStyleInjected = false;
+	private folioStyleInjected = false;
 	private enforcementSetUp = false;
 
 	constructor(
@@ -41,6 +42,13 @@ class LatexPdfViewerContribution extends Disposable implements IWorkbenchContrib
 		@ICommandService private readonly commandService: ICommandService,
 	) {
 		super();
+
+		// Inject styles immediately (before any async work) to prevent flash of default UI
+		if (this.contextService.getWorkbenchState() !== WorkbenchState.EMPTY) {
+			this.injectFolioStylesheet();
+			this.injectChromelessStylesheet();
+		}
+
 		this.run();
 	}
 
@@ -57,7 +65,6 @@ class LatexPdfViewerContribution extends Disposable implements IWorkbenchContrib
 		// Close auxiliary sidebar (chat panel) if open
 		this.commandService.executeCommand('workbench.action.closeAuxiliaryBar').catch(() => { });
 
-		this.injectFolioStylesheet();
 		await this.setupFocusedMode();
 
 		// Check if a PDF editor is already open (workspace restore case)
@@ -413,6 +420,11 @@ class LatexPdfViewerContribution extends Disposable implements IWorkbenchContrib
 	// --- Folio global visual identity ---
 
 	private injectFolioStylesheet(): void {
+		if (this.folioStyleInjected) {
+			return;
+		}
+		this.folioStyleInjected = true;
+
 		const style = document.createElement('style');
 		style.id = 'folio-global-css';
 		style.textContent = `
@@ -1168,5 +1180,5 @@ class LatexPdfViewerContribution extends Disposable implements IWorkbenchContrib
 registerWorkbenchContribution2(
 	LatexPdfViewerContribution.ID,
 	LatexPdfViewerContribution,
-	WorkbenchPhase.AfterRestored
+	WorkbenchPhase.BlockRestore
 );

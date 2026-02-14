@@ -42,11 +42,9 @@
 				if ((configuration.colorScheme.dark && data.baseTheme !== 'hc-black') || (!configuration.colorScheme.dark && data.baseTheme !== 'hc-light')) {
 					data = undefined; // high contrast mode has been turned by the OS -> ignore stored colors and layouts
 				}
-			} else if (configuration.autoDetectColorScheme) {
-				if ((configuration.colorScheme.dark && data.baseTheme !== 'vs-dark') || (!configuration.colorScheme.dark && data.baseTheme !== 'vs')) {
-					data = undefined; // OS color scheme is tracked and has changed
-				}
 			}
+			// Folio: don't discard splash data based on OS color scheme —
+			// Folio always uses a light theme regardless of system dark mode
 		}
 
 		// developing an extension -> ignore stored layouts
@@ -55,6 +53,7 @@
 		}
 
 		// minimal color configuration (works with or without persisted data)
+		// Folio: always use light theme colors for consistent branding
 		let baseTheme;
 		let shellBackground;
 		let shellForeground;
@@ -62,26 +61,11 @@
 			baseTheme = data.baseTheme;
 			shellBackground = data.colorInfo.editorBackground;
 			shellForeground = data.colorInfo.foreground;
-		} else if (configuration.autoDetectHighContrast && configuration.colorScheme.highContrast) {
-			if (configuration.colorScheme.dark) {
-				baseTheme = 'hc-black';
-				shellBackground = '#000000';
-				shellForeground = '#FFFFFF';
-			} else {
-				baseTheme = 'hc-light';
-				shellBackground = '#FFFFFF';
-				shellForeground = '#000000';
-			}
-		} else if (configuration.autoDetectColorScheme) {
-			if (configuration.colorScheme.dark) {
-				baseTheme = 'vs-dark';
-				shellBackground = '#1E1E1E';
-				shellForeground = '#CCCCCC';
-			} else {
-				baseTheme = 'vs';
-				shellBackground = '#FFFFFF';
-				shellForeground = '#000000';
-			}
+		} else {
+			// Folio default: light theme with Folio palette
+			baseTheme = 'vs';
+			shellBackground = '#f0f0f2';
+			shellForeground = '#1c1c1e';
 		}
 
 		const style = document.createElement('style');
